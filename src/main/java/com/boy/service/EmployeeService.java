@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.boy.bean.Employee;
+import com.boy.bean.EmployeeExample;
+import com.boy.bean.EmployeeExample.Criteria;
 import com.boy.dao.EmployeeMapper;
 
 @Service
@@ -21,6 +23,19 @@ public class EmployeeService {
 	public void saveEmp(Employee employee) {
 		employeeMapper.insertSelective(employee);
 		
+	}
+	/**
+	 * 检验用户是否可用
+	 * @param userName
+	 * @return
+	 */
+	public boolean checkUser(String userName) {
+		EmployeeExample example=new EmployeeExample();
+		Criteria createCriteria = example.createCriteria();
+		createCriteria.andEmpNameEqualTo(userName);
+		long count = employeeMapper.countByExample(example);
+		//如果记录数==0表示可用
+		return count==0;
 	}
 
 }

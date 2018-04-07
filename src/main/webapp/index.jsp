@@ -121,13 +121,16 @@
 		});
 	}
 	//解析显示分页信息
+	//定义全局变量
+	var totalRecord;
+	var currentPage;
 	function build_page_info(result){
 		$("#page_info_area").empty();
 		$("#page_info_area").append("当前"+result.extend.pageInfo.pageNum+"页,总"+
 				result.extend.pageInfo.pages+"页,总"+
 				result.extend.pageInfo.total+"条记录");
-		//totalRecord = result.extend.pageInfo.total;
-		//currentPage = result.extend.pageInfo.pageNum;
+		totalRecord = result.extend.pageInfo.pages;
+		currentPage = result.extend.pageInfo.pageNum;
 	} 
 	
 	//解析显示分页条，点击分页要能去下一页....
@@ -195,8 +198,8 @@
 	//点击新增按钮弹出模态框。
 	$("#emp_add_modal_btn").click(function(){
 		//清除表单数据（表单完整重置（表单的数据，表单的样式））
-		//reset_form("#empAddModal form");
-		//s$("")[0].reset();
+		reset_form("#empAddModal form");
+		//$("")[0].reset();
 		//发送ajax请求，查出部门信息，显示在下拉列表中
 		getDepts("#empAddModal select");
 		//弹出模态框
@@ -204,14 +207,25 @@
 			backdrop:"static"
 		});
 	});
+	//清空表单样式及内容
+	function reset_form(ele){
+		$(ele)[0].reset();
+		//清空表单样式
+		$(ele).find("*").removeClass("has-error has-success");
+		$(ele).find(".help-block").text("");
+	}
 	
 	function getDepts(ele){
+		  //清空之前的值
+        $(ele).empty();
+		  //发送ajax请求获取部门信息数据
 		$.ajax({
 			url:"${APP_PATH}/depts",
 			type:"GET",
 			success:function(result){
 				//console.log(result);
 				$.each(result.extend.depts,function(){
+					
 					var optionEle = $("<option></option>").append(this.deptName).attr("value",this.deptId);
 					optionEle.appendTo(ele);
 				}); 
@@ -221,15 +235,16 @@
 	
 	//点击保存，保存员工。
 	$("#emp_save_btn").click(function(){
-		/* //1、模态框中填写的表单数据提交给服务器进行保存
+		//1、模态框中填写的表单数据提交给服务器进行保存
 		//1、先对要提交给服务器的数据进行校验
 		if(!validate_add_form()){
 			return false;
-		};
+		}; 
+		
 		//1、判断之前的ajax用户名校验是否成功。如果成功。
 		if($(this).attr("ajax-va")=="error"){
 			return false;
-		} */
+		} 
 		
 		//2、发送ajax请求保存员工
 		$.ajax({
@@ -237,8 +252,8 @@
 			type:"POST",
 			data:$("#empAddModal form").serialize(),
 			success:function(result){
-				alert(result.msg);
-				/* if(result.code == 100){
+				//alert(result.msg);s
+				if(result.code == 200){
 					//员工保存成功；
 					//1、关闭模态框
 					$("#empAddModal").modal('hide');
@@ -250,20 +265,81 @@
 					//显示失败信息
 					//console.log(result);
 					//有哪个字段的错误信息就显示哪个字段的；
-					if(undefined != result.extend.errorFields.email){
+					if(undefined != result.extend.errorField.email){
 						//显示邮箱错误信息
-						show_validate_msg("#email_add_input", "error", result.extend.errorFields.email);
+						//show_validate_msg("#email_add_input", "error", result.extend.errorField.email);
 					}
-					if(undefined != result.extend.errorFields.empName){
+					if(undefined != result.extend.errorField.empName){
 						//显示员工名字的错误信息
-						show_validate_msg("#empName_add_input", "error", result.extend.errorFields.empName);
+						//show_validate_msg("#empName_add_input", "error", result.extend.errorField.empName);
 					}
-				} */
+				} 
 			}
 		});
 	});
+	//校验表单数据
+	function validate_add_form(){
+		//获取要校验的数据，并使用正则表达式进行校验
+		//1.用户名校验
+		//1.1获取表单数据，用户名
+		var empName=$("#empName_add_input").val();
+		//1.2.编写校验规则，可以参考jQuery文档
+		var regName=/(^[a-zA-Z0-9_-]{6,16}$)|(^[\u2E80-\u9FFF]{2,5})/;
+		//1.3引用正则表达式的test方法测试字符串是否符合要求
+		if(!regName.test(empName)){
+			//alert("用户名可以是2-5位中文或者6-16位英文和数字的组合");
+			show_validate_msg("#empName_add_input", "error", "用户名可以是2-5位中文或者6-16位英文和数字的组合");
+			return false;
+		}else{
+			show_validate_msg("#empName_add_input", "success", "");
+		}
+		//2.邮箱校验
+		var email=$("#email_add_input").val();
+		var regEmail=/^([a-z0-9_\.-]+)@([\da-z\.-]+)\.([a-z\.]{2,6})$/;
+		if(!regEmail.test(email)){
+			//alert("邮箱格式不正确");
+			show_validate_msg("#email_add_input", "error", "邮箱格式不正确");
+			return false;
+		}else{
+			show_validate_msg("#email_add_input", "success", "");
+		}
+		return true;
+	}
 	
-
+	//显示校验结果的提示信息
+	function show_validate_msg(ele,status,msg){
+		//清除当前元素的校验状态
+		$(ele).parent().removeClass("has-success has-error");
+		$(ele).next("span").text("");
+		if("success"==status){
+			$(ele).parent().addClass("has-success");
+			$(ele).next("span").text(msg);
+		}else if("error" == status){
+			$(ele).parent().addClass("has-error");
+			$(ele).next("span").text(msg);
+		}
+	}
+	
+	//检验用户名是否可用
+	$("#empName_add_input").change(function(){
+		//发送ajax请求验证用户名是否可用
+		var empName=this.value;
+		$.ajax({
+			url:"${APP_PAHT}/checkUser",
+			data:"empName="+empName,
+			type:"POST",
+			success:function(result){
+				if(result.code==200){
+					show_validate_msg("#empName_add_input", "success", "用户名可用");
+					//给保存按钮添加一个属性
+					$("#emp_save_btn").attr("ajax-va","success");
+				}else{
+					show_validate_msg("#empName_add_input", "error", "用户名不可用");
+					$("#emp_save_btn").attr("ajax-va","error");
+				}
+			}
+		});
+	});
 </script>
 </body>
 </html>

@@ -6,6 +6,19 @@
   <packaging>war</packaging>
   <!-- 引入项目依赖所需的jar包 -->
   <dependencies>
+  
+  <!-- JSR303支持数据校验：
+  Tomcat7及以上服务器，直接在项目中依赖hibernate-validator即可
+  若在Tomcat7及以下服务器，由于EL表达式不是新的标准，功能不强大，需要额外给服务器的lib包中替换
+  新的标准 EL
+   -->
+	  <!-- https://mvnrepository.com/artifact/org.hibernate/hibernate-validator -->
+	<dependency>
+	    <groupId>org.hibernate</groupId>
+	    <artifactId>hibernate-validator</artifactId>
+	    <version>5.4.2.Final</version>
+	</dependency>
+  
   	<!-- 支持对象转为json字符串 -->
   <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
 	<dependency>
@@ -123,4 +136,26 @@
 	</dependency>
 	
   </dependencies>
+  
+  <build>
+		<plugins>
+				<!-- 配置Tomcat插件 -->
+				<plugin>
+					<groupId>org.apache.tomcat.maven</groupId>
+					<artifactId>tomcat7-maven-plugin</artifactId>
+					<configuration>
+						<path>/</path>
+						<port>8080</port>
+					</configuration>
+				</plugin>
+				
+				  <plugin>
+			        <groupId>org.apache.maven.plugins</groupId>
+			        <artifactId>maven-surefire-plugin</artifactId>
+			        <configuration>
+			          <skip>true</skip>
+			        </configuration>
+			      </plugin>
+			</plugins>
+	</build>
 </project>
